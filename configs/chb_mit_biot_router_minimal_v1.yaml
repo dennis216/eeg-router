@@ -1,0 +1,101 @@
+protocol_id: chb-mit-biot-router-minimal-v1
+status: frozen_before_execution
+source_plan: CHB_MIT_BIOT_Router_Minimal_Experiment_Plan.md
+scope: one_pre_router_only
+
+cohort:
+  dataset: CHB-MIT
+  canonical_patients: 22
+  group_unit: canonical_patient_id
+  subject_merge: {chb01: chb01_21, chb21: chb01_21}
+  excluded_patient: chb24
+  base_cv_manifest: manifests/groupkfold_cv_v1/cv_manifest.json
+  base_cv_algorithm: sklearn_GroupKFold_outer_GroupShuffleSplit_inner
+  rotation: 3_expert_train_folds_1_router_dev_fold_1_final_test_fold
+  rounds: 5
+
+biot:
+  repository: third_party/BIOT
+  encoder: BIOTEncoder
+  checkpoint: third_party/BIOT/pretrained-models/EEG-PREST-16-channels.ckpt
+  checkpoint_sha256: 40f55f5d23e83796495616c8145c8336fcff2b901c42e8ba5115223081c2ad70
+  channels:
+    - FP1-F7
+    - F7-T7
+    - T7-P7
+    - P7-O1
+    - FP2-F8
+    - F8-T8
+    - T8-P8
+    - P8-O2
+    - FP1-F3
+    - F3-C3
+    - C3-P3
+    - P3-O1
+    - FP2-F4
+    - F4-C4
+    - C4-P4
+    - P4-O2
+  source_sampling_hz: 256
+  sampling_hz: 200
+  window_seconds: 10
+  samples_per_window: 2000
+  resampling: scipy_resample_poly_antialias
+  per_window_normalization: abs_value_95th_quantile_per_channel
+  encoder_dim: 256
+  frozen: true
+
+experts:
+  names: [singlem, cbramod, tcn_gat]
+  retrain_each_round: true
+  optimizer_updates: 5000
+  checkpoint_reuse_for_formal_runs: false
+  training_cache_profile: v3_official_noclip
+  threshold_source: expert_train_only
+  threshold_grid: {start: 0.01, stop: 0.99, step: 0.01}
+  target_event_sensitivity: 0.80
+  eventization:
+    probability_smoothing: {kind: causal_ema, alpha: 0.3333333333333333}
+    minimum_event_duration_s: 4
+    merge_gap_s: 10
+    refractory_s: 30
+
+router:
+  architecture: frozen_biot_plus_competence_head_top1
+  hidden_dim: 64
+  dropout: 0.2
+  output_dim: 3
+  target: relative_correctness_margin_soft_competence
+  encoder_frozen: true
+  pilot:
+    learning_rates: [0.001, 0.0003]
+    hidden_dims: [64, 128]
+    dropouts: [0.2, 0.4]
+    seed: 3407
+    selection: lowest_fa_at_target_sensitivity
+  selection: argmax_competence
+
+evaluation:
+  test_evaluation_count_per_round: 1
+  test_threshold_reselection: false
+  test_router_retraining: false
+  continuous_test_recordings: true
+  metrics: [event_sensitivity, fa_per_24h, detection_delay_s]
+  bootstrap:
+    unit: patient
+    replicates: 2000
+    seed: 3407
+  methods: [singlem, cbramod, tcn_gat, best_fixed_expert, oracle, biot_router]
+  success_gate:
+    fa_reduction_vs_best_fixed_fraction: 0.25
+    sensitivity_loss_max_pp: 3.0
+
+paths:
+  window_manifest: manifests/windows.parquet
+  recordings_manifest: manifests/recordings.parquet
+  seizures_manifest: manifests/seizures.parquet
+  expert_cache_root: /mnt/d/EEGData/bfa_cache_v3_official_noclip
+  expert_feature_root: /mnt/d/EEGData/bfa_features_v3_official_noclip
+  quality_cache_root: /mnt/d/EEGData/bfa_cache_v3
+  biot_input_cache_root: /mnt/d/EEGData/bfa_biot_prest_input_v1
+  output_namespace: chb-mit-biot-router-minimal-v1

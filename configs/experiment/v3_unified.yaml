@@ -1,0 +1,97 @@
+protocol:
+  id: B_Project_Protocol_v3_full
+  source_pdf: /mnt/c/Users/User/Downloads/B_Project_Protocol_v3.pdf
+  source_pdf_sha256: 67cbb6e70c089b56f4de96b413ed18507b19cbb57c635b9eb218fff40ce0c1f1
+  execution_addendum: protocols/v3-full-execution.md
+  suite: mandatory_unified
+
+experiment:
+  name: v3_unified_shared_head
+  output_namespace: v3-full
+  models: [singlem, cbramod, tcn_gat]
+  model_seeds: [17, 42, 3407]
+  split_seeds: [17, 42, 3407, 2026, 777]
+  context_windows: 31
+  common_channels: 16
+  embedding_shape: [16, 128]
+  required_run_count: 45
+
+inputs:
+  window_manifest: manifests/windows.parquet
+  recordings_manifest: manifests/recordings.parquet
+  seizures_manifest: manifests/seizures.parquet
+  tcn_cache_root: /mnt/d/EEGData/bfa_cache_v3
+  foundation_signal_cache_root: /mnt/d/EEGData/bfa_cache_v3_official_noclip
+  foundation_feature_cache_root: /mnt/d/EEGData/bfa_features_v3_official_noclip
+  quality_cache_root: /mnt/d/EEGData/bfa_cache_v3
+  views:
+    singlem:
+      bandpass_hz: [0.5, 50.0]
+      notch_hz: 60.0
+      sampling_hz: 128
+      unit: microvolt
+      scale_from_uv: 0.01
+      hard_clip: false
+      audited_clipping_fraction_if_hard_clipped: 0.028197
+    cbramod:
+      bandpass_hz: [0.3, 75.0]
+      notch_hz: 60.0
+      sampling_hz: 200
+      unit: microvolt
+      scale_from_uv: 0.01
+      hard_clip: false
+    tcn_gat:
+      bandpass_hz: [0.5, 45.0]
+      notch_hz: 60.0
+      sampling_hz: 256
+      unit: microvolt
+      scale_from_uv: 1.0
+      quality_features: [line_noise_ratio, clipping_fraction, flat_fraction]
+
+head:
+  dim: 128
+  heads: 4
+  blocks: 4
+  dropout: 0.20
+  causal: true
+
+training:
+  optimizer: AdamW
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  scheduler: cosine
+  minimum_learning_rate: 0.00001
+  precision: bf16
+  micro_batch_size: 16
+  gradient_accumulation: 4
+  effective_batch_size: 64
+  max_epochs: 30
+  early_stopping_patience: 7
+  target_positive_fraction: 0.30
+  gradient_clip_norm: 1.0
+  dataloader_workers: 4
+  checkpoint_every_epochs: 1
+  validation_every_epochs: 1
+  checkpoint_selection: validation_window_auroc_then_lower_fa_per_24h
+  deterministic: true
+
+evaluation:
+  threshold_grid: {start: 0.01, stop: 0.99, step: 0.01}
+  target_validation_event_sensitivity: 0.80
+  probability_smoothing: {kind: causal_ema, alpha: 0.3333333333333333}
+  minimum_event_duration_s: 4
+  merge_gap_s: 10
+  refractory_s: 30
+  test_runs: 1
+  test_threshold_source: validation_only_best_checkpoint
+
+integrity:
+  max_gpu_memory_gib: 28
+  completed_requires:
+    - checkpoint
+    - validation_probabilities
+    - threshold_lock
+    - test_probabilities
+    - test_metrics
+    - run_manifest
+    - sha256_verification

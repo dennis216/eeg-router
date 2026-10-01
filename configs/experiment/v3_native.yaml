@@ -1,0 +1,40 @@
+protocol:
+  id: B_Project_Protocol_v3_full
+  suite: mandatory_native
+
+experiment:
+  name: v3_native_reasonableness_check
+  output_namespace: v3-full
+  models: [singlem, cbramod, tcn_gat]
+  model_seeds: [17, 42, 3407]
+  split_seed: 17
+  required_run_count: 9
+
+native_routes:
+  singlem:
+    backbone: frozen
+    classifier: rbf_svm
+    C: [0.1, 1, 10, 100]
+    gamma: [scale, auto]
+    selection_metric: validation_macro_f1
+    probability_calibration: platt_train_validation_only
+  cbramod:
+    backbone: frozen
+    classifier: avgpooling_patch_reps_linear_probe
+    epochs: 50
+    batch_size: 64
+    backbone_learning_rate: 0.0001
+    head_learning_rate: 0.0005
+    weight_decay: 0.05
+    dropout: 0.10
+    gradient_clip_norm: 1.0
+    scheduler: cosine
+    minimum_learning_rate: 0.000001
+  tcn_gat:
+    classifier: native_mean_pooling_head
+    max_epochs: 30
+    early_stopping_patience: 7
+
+evaluation:
+  reuse_global_eventizer: true
+  threshold_source: validation_only

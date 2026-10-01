@@ -1,0 +1,94 @@
+protocol_id: v3-standard-confirmatory-v1
+status: frozen_before_confirmatory_training
+frozen_at: "2026-08-16T00:00:00-07:00"
+parent_protocol: B_Project_Protocol_v3
+parent_pilot: v3-compact-extension-v1
+analysis_intent: patient_level_standard_confirmatory
+
+integrity:
+  source_recordings_manifest: manifests/recordings.parquet
+  source_seizures_manifest: manifests/seizures.parquet
+  outer_cv_manifest: manifests/standard_cv_v1/cv_manifest.json
+  compact_release_preserved: true
+
+cohort:
+  dataset: CHB-MIT
+  patients: 22
+  split_seed: 20260816
+  model_seed: 17
+  split_file: manifests/standard_cv_v1/fold_0.json
+  window_manifest: manifests/windows.parquet
+  test_tuning_forbidden: true
+  outer_folds: 5
+  fold_test_patient_counts: [5, 5, 4, 4, 4]
+  inner_validation_fraction: 0.20
+
+models:
+  names: [singlem, cbramod, tcn_gat]
+  model_seeds: [17, 42, 3407]
+  shared_context_head: true
+  context_windows: 31
+  input_views:
+    singlem:
+      notch_hz: 60
+      bandpass_hz: [0.5, 50.0]
+      sampling_hz: 128
+      scale_from_uv: 0.01
+      hard_clip: false
+      audit_out_of_range: true
+    cbramod:
+      notch_hz: 60
+      bandpass_hz: [0.3, 75.0]
+      sampling_hz: 200
+      scale_from_uv: 0.01
+      hard_clip: false
+    tcn_gat:
+      notch_hz: 60
+      bandpass_hz: [0.5, 45.0]
+      sampling_hz: 256
+      scale_from_uv: 1.0
+      quality_features: [line_noise_ratio, clipping_fraction, flat_fraction]
+
+training:
+  optimizer: AdamW
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  scheduler: cosine
+  minimum_learning_rate: 0.00001
+  precision: bf16
+  micro_batch_size: 16
+  gradient_accumulation: 4
+  effective_batch_size: 64
+  optimizer_updates: 5000
+  sampled_contexts_per_model: 320000
+  patient_balanced_sampling: true
+  target_positive_fraction: 0.30
+  loss: BCEWithLogits
+  pos_weight_source: training_manifest_only
+  gradient_clip_norm: 1.0
+  dataloader_workers: 4
+  checkpoint_every_updates: 1000
+  full_validation_every_updates: 1000
+  checkpoint_selection: final_5000_update_checkpoint
+  early_stopping: false
+  model_specific_extension_forbidden: true
+
+evaluation:
+  validation_thresholds: {start: 0.01, stop: 0.99, step: 0.01}
+  target_validation_event_sensitivity: 0.80
+  probability_smoothing: {kind: causal_ema, alpha: 0.3333333333333333}
+  minimum_event_duration_s: 4
+  merge_gap_s: 10
+  refractory_s: 30
+  test_runs: 1
+  test_threshold_source: validation_only
+  metrics: [event_sensitivity, fa_per_24h, detection_delay_s]
+
+reporting:
+  labels: [preliminary_confirmatory, compute_budgeted, not_convergence_matched]
+  architecture_ranking_claim_forbidden: true
+  report_gpu_time: true
+  report_optimizer_updates: true
+  report_patient_level_ci: true
+  preserve_all_records: true
+  compact_release_preserved: true

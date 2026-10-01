@@ -1,0 +1,55 @@
+protocol_id: same-window-router-first-moe-v1
+seed: 3407
+window: {seconds: 10, stride_seconds: 2, channels: 16}
+labels:
+  positive: window_center_inside_seizure
+  negative: window_center_at_least_30s_from_seizure
+  boundary: unknown_excluded
+mit:
+  train: [chb01_21, chb03, chb05, chb08, chb09, chb11, chb13, chb14, chb15, chb16, chb18, chb20, chb22]
+  val: [chb04, chb06, chb10, chb19]
+  test: [chb02, chb07, chb12, chb17, chb23]
+tusz:
+  train: official_train
+  val: official_dev
+  test: official_eval
+experts:
+  names: [singlem, cbramod, tcn_gat]
+  optimizer: AdamW
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  maximum_updates: 5000
+  minimum_updates: 1500
+  validation_every_updates: 500
+  patience_checks: 7
+  effective_batch_size: 64
+threshold:
+  grid: {start: 0.01, stop: 0.99, step: 0.01}
+  target_sensitivity: 0.80
+  selection: min_false_alarm_time_then_fa_then_higher_threshold
+router:
+  encoder: frozen_BIOT_EEG_PREST_16_channels
+  embedding_dim: 256
+  hidden_dim: 64
+  dropout: 0.2
+  actions: [singlem, cbramod, tcn_gat, reject]
+  risk_head: false
+  optimizer: AdamW
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  maximum_epochs: 50
+  minimum_epochs: 5
+  patience_epochs: 7
+  effective_batch_size: 4096
+  sensitivity_loss_limit_pp: 3.0
+eventization:
+  causal_ema_alpha: 0.3333333333333333
+  threshold: 0.5
+  minimum_duration_seconds: 4
+  merge_gap_seconds: 10
+  refractory_seconds: 30
+  match_collar: {before_onset_seconds: 30, after_offset_seconds: 60}
+reporting:
+  primary_metrics: [sensitivity, fa_per_24h, false_alarm_time_min_per_24h]
+  secondary_metrics: [alarm_time_pct]
+  compare: [singlem, cbramod, tcn_gat, best_fixed_expert, same_window_moe]

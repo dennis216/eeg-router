@@ -1,0 +1,96 @@
+pilot_id: BSN-pilot-v1
+status: frozen_before_training_outcomes
+frozen_at: "2026-08-03T20:24:41-07:00"
+parent_protocol: B_Project_Protocol_v3
+full_v3_unchanged: true
+frozen_parent_commit: 15388650920b6378c62d2ec94d51db993cfff83b
+
+integrity:
+  windows_manifest_sha256: c46f989a660710706c81c7b9de6b6f7c7e93b869be2da847904162e229f8122f
+  split_manifest_sha256: 0af50ad0eab999fc5f6a46f2782b48aab7c8f44b4ad0a68dd7a2c0ea21c1c66e
+  singlem_unit_audit_sha256: 0ca077a9b5dbfde198aa213ca12e24d57dab0598567b9ce297f0e4e94665576f
+  tcn_profile_sha256: c536951650340d328bb551b8c020ff6fa2bcc9b0ab861c078ed2acad319b7e86
+
+cohort:
+  dataset: CHB-MIT
+  patients: 22
+  split_seed: 17
+  model_seed: 17
+  split_file: manifests/splits/split_17.json
+  window_manifest: manifests/windows.parquet
+  test_tuning_forbidden: true
+
+models:
+  names: [singlem, cbramod, tcn_gat]
+  shared_output_shape: [16, 128]
+  shared_context_head: true
+  context_windows: 31
+  input_views:
+    singlem:
+      notch_hz: 60
+      bandpass_hz: [0.5, 50.0]
+      sampling_hz: 128
+      scale_from_uv: 0.01
+      hard_clip: false
+      audit_out_of_range: true
+    cbramod:
+      notch_hz: 60
+      bandpass_hz: [0.3, 75.0]
+      sampling_hz: 200
+      scale_from_uv: 0.01
+      hard_clip: false
+    tcn_gat:
+      notch_hz: 60
+      bandpass_hz: [0.5, 45.0]
+      sampling_hz: 256
+      scale_from_uv: 1.0
+      quality_features: [line_noise_ratio, clipping_fraction, flat_fraction]
+
+training:
+  optimizer: AdamW
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  scheduler: cosine
+  minimum_learning_rate: 0.00001
+  precision: bf16
+  micro_batch_size: 16
+  gradient_accumulation: 4
+  effective_batch_size: 64
+  optimizer_updates: 5000
+  sampled_contexts_per_model: 320000
+  patient_balanced_sampling: true
+  target_positive_fraction: 0.30
+  loss: BCEWithLogits
+  pos_weight_source: training_manifest_only
+  gradient_clip_norm: 1.0
+  dataloader_workers: 4
+  checkpoint_every_updates: 1000
+  full_validation_every_updates: 1000
+  checkpoint_selection: final_5000_update_checkpoint
+  early_stopping: false
+  model_specific_extension_forbidden: true
+
+evaluation:
+  validation_thresholds: {start: 0.01, stop: 0.99, step: 0.01}
+  target_validation_event_sensitivity: 0.80
+  probability_smoothing: {kind: causal_ema, alpha: 0.3333333333333333}
+  minimum_event_duration_s: 4
+  merge_gap_s: 10
+  refractory_s: 30
+  test_runs: 1
+  test_threshold_source: validation_only
+  metrics: [event_sensitivity, fa_per_24h]
+
+reporting:
+  labels: [preliminary, compute_budgeted, not_convergence_matched]
+  architecture_ranking_claim_forbidden: true
+  report_gpu_time: true
+  report_optimizer_updates: true
+  preserve_all_records: true
+  full_v3_followup: convergence_matched_with_early_stopping_and_H1_to_H5
+
+pre_outcome_amendments:
+  - amended_at: "2026-08-03T20:31:38-07:00"
+    field: integrity.singlem_unit_audit_sha256
+    reason: replaced preliminary common-0.5-45-Hz audit with exact official-0.5-50-Hz pilot-view audit
+    validation_or_test_seen: false

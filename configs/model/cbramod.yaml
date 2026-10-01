@@ -1,0 +1,17 @@
+name: cbramod
+source_repository: https://github.com/wjq-learning/CBraMod.git
+source_commit: 0ff6be918985689e7df679bc731ffb70e6c6224f
+checkpoint: third_party/CBraMod/pretrained_weights/pretrained_weights.pth
+checkpoint_sha256: 0792cb808c14e6b7a2bb2ce1dff379bc47bc54c49a779825bdfeb33bf8157178
+input:
+  sampling_hz: 200
+  unit: microvolt_divided_by_100
+  channels: 16
+  seconds: 10
+  patches: 10
+  points_per_patch: 200
+adapter:
+  patch_pool: mean
+  source_dim: 200
+  output_dim: 128
+  freeze_backbone: true

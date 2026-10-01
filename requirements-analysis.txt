@@ -1,0 +1,13 @@
+# Analysis dependencies. Historical environment versions are documented separately.
+numpy
+pandas
+scipy
+scikit-learn
+joblib
+pyarrow
+matplotlib
+statsmodels
+mne
+pyyaml
+pytest
+reportlab

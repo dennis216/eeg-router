@@ -1,0 +1,11 @@
+name: tcn_gat
+input_view: signal
+input_shape: [16, 2560]
+quality_features: 3
+temporal_kernels: [15, 31, 63]
+temporal_channels_per_branch: 32
+graph_hidden_dim: 64
+graph_heads: 4
+graph_layers: 2
+dropout: 0.2
+output_dim: 128

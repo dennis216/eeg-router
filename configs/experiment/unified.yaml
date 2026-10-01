@@ -1,0 +1,14 @@
+defaults:
+  - /base
+
+experiment:
+  name: unified_shared_head
+  context_windows: 31
+  embedding_shape: [16, 128]
+
+head:
+  dim: 128
+  heads: 4
+  blocks: 4
+  dropout: 0.2
+  causal: true

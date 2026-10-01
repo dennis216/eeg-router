@@ -1,0 +1,6 @@
+-r requirements-analysis.txt
+torch
+torch-geometric
+catboost
+omegaconf
+pydantic>=2

@@ -1,0 +1,18 @@
+name: singlem
+source_repository: https://github.com/ttlabtuat/SingLEM.git
+source_commit: d751b1b38d0ae64887e57b2d05df01e2d43ff128
+checkpoint: third_party/SingLEM/SingLEM/checkpoints/singlem_downstream_excluded.pt
+checkpoint_sha256: cb4c1b4f4a6fae99a984b883177e09b8c2fe44ed0d4c9a0ded3928dc425584bb
+input:
+  sampling_hz: 128
+  unit: microvolt
+  scale: 0.01
+  channels: 16
+  seconds: 10
+  tokens: 10
+  token_samples: 128
+adapter:
+  temporal_pool: mean
+  source_dim: 16
+  output_dim: 128
+  freeze_encoder: true

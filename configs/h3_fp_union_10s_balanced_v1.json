@@ -1,0 +1,103 @@
+{
+  "analysis_id": "h3-fp-union-10s-balanced-v1",
+  "task": "detector-membership-from-false-positive-EEG",
+  "datasets": ["chbmit", "tusz"],
+  "models": ["singlem", "cbramod", "tcn_gat"],
+  "source_selection": {
+    "canonical_detector_run": "fold0_seed17",
+    "canonical_fold": 0,
+    "canonical_seed": 17,
+    "one_canonical_output_per_detector": true,
+    "other_detector_seeds_are_robustness_only": true
+  },
+  "event_construction": {
+    "input_scope": "false_positive_intervals_only",
+    "union_rule": "strict_interval_overlap_connected_components_within_recording",
+    "proximity_merge_seconds": 0,
+    "label_type": "multi_label",
+    "label_columns": ["label_singlem", "label_cbramod", "label_tcn_gat"]
+  },
+  "windowing": {
+    "window_seconds": 10.0,
+    "sampling_hz": 128.0,
+    "channels": 16,
+    "samples": 1280,
+    "alignment": "union_event_start_nonoverlapping",
+    "windows_per_event": "floor(event_duration_seconds / 10)",
+    "drop_event_if_duration_lt_seconds": 10.0,
+    "drop_incomplete_tail": true,
+    "zero_padding": false
+  },
+  "input": {
+    "raw_eeg_only": true,
+    "detector_probabilities": false,
+    "event_duration": false,
+    "window_count": false,
+    "patient_id": false,
+    "recording_id": false,
+    "qc_features": false,
+    "hmm_features": false,
+    "per_channel_demean": true,
+    "physical_scale_divisor": 100.0
+  },
+  "balancing": {
+    "retain_all_complete_windows": true,
+    "oversampling": "none",
+    "undersampling": "none",
+    "base_window_weight": "1 / (number_of_events_for_patient * windows_in_event)",
+    "detector_loss_weight": "equal_1_over_3",
+    "detector_positive_negative_mass": "one_half_each",
+    "multi_label_overlap_handling": "one_window_one_target_vector_no_duplication"
+  },
+  "model": {
+    "name": "multiscale_dilated_1d_cnn_groupnorm",
+    "stem": "Conv1d(16,64,kernel=7,stride=2)+GroupNorm(8)+GELU",
+    "multiscale_kernels": [3, 7, 15],
+    "dilations": [1, 2, 4, 8],
+    "pooling": "temporal_mean_and_standard_deviation",
+    "head": "Linear(256,128)+GELU+Dropout(0.2)+Linear(128,3)",
+    "output": "three_logits_sigmoid_at_evaluation"
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "batch_size": 128,
+    "max_epochs": 50,
+    "early_stopping_patience": 8,
+    "augmentation": "none",
+    "validation_selection_metric": "patient_weighted_event_macro_auroc",
+    "threshold_selection": "validation_only_per_detector_f1",
+    "test_evaluation_count": 1
+  },
+  "split": {
+    "outer": "GroupKFold",
+    "outer_splits": 5,
+    "group": "canonical_patient_id",
+    "inner_validation": "GroupShuffleSplit_within_outer_development_patients",
+    "validation_fraction": 0.2,
+    "patient_leakage_allowed": false
+  },
+  "metrics": {
+    "primary": "patient_weighted_event_level_macro_auroc",
+    "secondary": [
+      "event_level_macro_auprc",
+      "per_detector_auroc",
+      "per_detector_auprc",
+      "exact_match_accuracy",
+      "label_accuracy",
+      "balanced_accuracy",
+      "macro_f1"
+    ],
+    "bootstrap_unit": "patient",
+    "bootstrap_replicates": 2000,
+    "window_level_metrics": "diagnostic_only"
+  },
+  "controls": {
+    "prior_only": true,
+    "duration_only": true,
+    "patient_duration_stratified_label_shuffle": true,
+    "shuffle_label_vector_as_a_unit": true,
+    "null_permutations": 20
+  }
+}

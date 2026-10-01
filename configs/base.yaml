@@ -1,0 +1,53 @@
+project:
+  name: b_false_alarm_atlas
+  protocol_version: 3
+
+data:
+  root: /mnt/d/EEGData/chbmit-1.0.0
+  common_channels:
+    - FP1-F7
+    - F7-T7
+    - T7-P7
+    - P7-O1
+    - FP1-F3
+    - F3-C3
+    - C3-P3
+    - P3-O1
+    - FP2-F4
+    - F4-C4
+    - C4-P4
+    - P4-O2
+    - FP2-F8
+    - F8-T8
+    - T8-P8
+    - P8-O2
+  window_seconds: 10
+  stride_seconds: 2
+  context_windows: 31
+  physical_context_seconds: 70
+
+splits:
+  seeds: [17, 42, 3407, 2026, 777]
+  patient_counts: {train: 13, validation: 4, test: 5}
+
+models:
+  names: [singlem, cbramod, tcn_gat]
+  seeds: [17, 42, 3407]
+
+eventizer:
+  target_validation_sensitivity: 0.80
+  threshold_step: 0.01
+  ema_points: 5
+  ema_alpha: 0.3333333333333333
+  minimum_duration_seconds: 4
+  merge_gap_seconds: 10
+  refractory_seconds: 30
+
+outputs:
+  root: outputs
+  tables: outputs/tables
+  figures: outputs/figures
+  events: outputs/events
+  reports: outputs/reports
+  runs: runs
+  logs: logs

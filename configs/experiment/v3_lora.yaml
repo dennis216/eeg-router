@@ -1,0 +1,27 @@
+protocol:
+  id: B_Project_Protocol_v3_full
+  suite: conditional_lora
+
+gate:
+  not_before: '2026-08-20'
+  required_mandatory_runs: 54
+  require_no_patient_leakage: true
+  require_reproducible_event_store: true
+
+experiment:
+  models: [singlem, cbramod]
+  model_seeds: [17, 42, 3407]
+  split_seed: 17
+  required_run_count: 6
+
+lora:
+  rank: 4
+  alpha: 8
+  dropout: 0.05
+  adapter_learning_rate: 0.0001
+  head_learning_rate: 0.0005
+  weight_decay: 0.05
+  batch_size: 32
+  max_epochs: 20
+  early_stopping_patience: 5
+  gradient_clip_norm: 1.0

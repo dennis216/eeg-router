@@ -27,4 +27,4 @@ Raw detector training additionally requires CHB-MIT EDFs, generated caches, lice
 
 Do not fabricate missing probabilities, event features, patient splits or results. Historical `.joblib` files must be trusted and loaded in a compatible scikit-learn environment.
 
-The provenance file records code paths relative to their source roots and hashes; it does not include patient rows, clinical annotations, credentials or email content.
+The public repository's Git history identifies the released code snapshot. Detailed source-copy provenance remains in the private backup; it is not an external input needed to run the synthetic example.

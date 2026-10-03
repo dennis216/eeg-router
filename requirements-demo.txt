@@ -1,0 +1,3 @@
+# Lightweight synthetic evaluation only; no EEG, PyTorch or model weights.
+numpy>=1.24,<3
+scipy>=1.10,<2

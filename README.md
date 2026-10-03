@@ -1,55 +1,83 @@
-# EEG router: BIBM manuscript and follow-up analyses
+# EEG Router
 
-Research code accompanying **Oracle Decomposition of False-Alarm Control in Routed EEG Seizure Detection** and subsequent router investigations.
+**Code for evaluating event routing and false alarms in seizure detection.**
+
+[中文说明](README.zh-CN.md) · [Experiment index](docs/EXPERIMENTS.md) · [Protocol](docs/PROTOCOL.md) · [Data requirements](docs/DATA.md) · [Status](docs/STATUS.md)
 
 Authors: Ziquan Wang and Zixuan Luo (equal contribution).
 
-This repository collects the original analysis, detector training/inference support, temporal-sharing and detector-source analyses, oracle decomposition, and reviewer-requested follow-up code. It also preserves related router/MoE development scripts. See [the experiment index](docs/EXPERIMENTS.md) before running a numbered script: similar numbers do not necessarily refer to the same experiment.
+## Research question
 
-## Current status
+Can selecting among existing EEG detector events reduce false alarms on held-out patients? This repository contains code accompanying *Oracle Decomposition of False-Alarm Control in Routed EEG Seizure Detection* and related follow-up analyses.
 
-The original paper uses `v3-groupkfold-confirmatory-v1`: five patient-held-out folds and three seeds (17, 42, 3407). Its learned-router negative result is preserved.
+The study evaluates pretrained and task-specific detectors (SingLEM, CBraMod and TCN-GAT), a learned event router, and retrospective oracle decisions using the same candidate groups. The original router's negative result is retained. Temporal-sharing and detector-source analyses provide additional descriptions of detector errors.
 
-The reviewer supplement `257_run_bibm_router_review_diagnostics.py` is **unfinished development code**. The latest available completion artifact records `smoke_complete`, one run and zero bootstrap replicates. The complete 15-run FROC, validation-selected comparison and four-condition supplement have **not** been verified as complete. Packaging this code does not change that status. Read [status and known issues](docs/STATUS.md).
+## What is included
 
-## Layout
-
-| Location | Contents |
+| Area | Start here |
 |---|---|
-| `src/bfa/` | Dataset/preprocessing, detector adapters, training and evaluation |
-| `scripts/` | Original full-name numbered entry points, including reviewer diagnostics |
-| `configs/`, `protocols/` | Training and experiment specifications |
-| `tests/` | Unit tests; a subset uses external checkpoints/data |
-| `archive/` | Later event matcher, kept separate from the paper protocol |
+| Original paper: patient splits, detectors, router and oracle | [Paper experiment entry points](docs/EXPERIMENTS.md) |
+| Follow-up diagnostics and alternative protocols | [Experiment index](docs/EXPERIMENTS.md) |
+| Reviewer-requested comparisons in development | [Completion and known issues](docs/STATUS.md) |
+| Evaluation primitives and tests | [Evaluation code](src/bfa/evaluation/) · [Tests](tests/evaluation/) |
+| Historical alternative event matcher | [Archived matcher](archive/matcher_after_2026_09_19.py) |
 
-## Install
+## Try it without EEG or a GPU
 
-Python 3.11 and Linux/WSL are the historical runtime. Install PyTorch appropriate for your hardware, then:
+Requires Python 3.11. From a fresh clone, run:
 
 ```bash
+git clone https://github.com/dennis216/eeg-router.git
+cd eeg-router
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
-pip install -r requirements-analysis.txt
-PYTHONPATH=src python -m pytest tests/evaluation -q
+python -m pip install -r requirements-demo.txt
+python examples/evaluation_demo.py
 ```
 
-Additional MoE experiments may require `requirements-extensions.txt` and BIOT source. CBraMod and SingLEM source and pretrained weights must be obtained separately; their repository locations and pinned revisions are in `configs/model/`. No third-party pretrained weights are redistributed here.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1` instead. The demo also runs from another working directory when invoked by its absolute path.
 
-## Reproduction
+The [synthetic example](examples/evaluation_demo.py) converts fixed scores into alarm events, matches them to synthetic seizure intervals, and calculates TP, FP, event sensitivity and false alarms per 24 h. Expected output includes **TP=1, FP=1, sensitivity=0.5 and FA/24h≈24.1341**. The denominator is 3,580 background seconds within a one-hour synthetic recording.
 
-Many original scripts explicitly use `/root/b_false_alarm_atlas`, and some historical fallbacks refer to the author's Windows workspace. These are preserved to avoid silently changing experiment behavior. For the original analyses, prepare an **isolated** Linux checkout at `/root/b_false_alarm_atlas`, install it there, and supply the external artifacts documented in [DATA.md](docs/DATA.md). Do not overwrite an existing experiment directory.
+These are teaching values, not study results. The example exercises evaluation primitives; it does not train or reproduce the full router.
 
-The original sequence is described in [EXPERIMENTS.md](docs/EXPERIMENTS.md). Existing detector probabilities, router joblib files, patient splits, event features and validation locks are required for posthoc reproduction. Source code alone cannot reproduce the published numeric table without those inputs.
+### Run lightweight checks
 
-The package defaults to the **paper's maximum-total-overlap event matcher**, followed by a minimum one-second overlap filter. The later cardinality-first matcher is preserved in `archive/matcher_after_2026_09_19.py`; it can produce different metrics. Use the dedicated robustness script for that comparison. See [PROTOCOL.md](docs/PROTOCOL.md).
+```bash
+python -m pip install -r requirements-test.txt
+python -m pytest tests/evaluation tests/examples -q
+python scripts/check_public_repository.py
+```
 
-Do not run the unfinished reviewer supplement as a claim of full reproduction. Its completion criteria and outstanding engineering/statistical issues are listed in `docs/STATUS.md`.
+[GitHub Actions](https://github.com/dennis216/eeg-router/actions) runs these checks and the demo on Ubuntu / Python 3.11. It does not download EEG, train models or run held-out experiments.
 
-## Data and licensing
+## Running study analyses
 
-Raw EEG, per-patient result tables, credentials, private correspondence, manuscript drafts, checkpoints and caches are excluded. Obtain CHB-MIT and TUH datasets under their own access terms. The complete historical backup remains private. No new open-source license is granted by this publication step; third-party source/weights retain their upstream terms. See [THIRD_PARTY.md](docs/THIRD_PARTY.md).
+Follow the [experiment index](docs/EXPERIMENTS.md), [original split specification](protocols/v3-groupkfold-confirmatory-v1.md) and [implemented event protocol](docs/PROTOCOL.md). The original evaluation uses five patient-held-out folds and three seeds (17, 42, 3407).
 
-## Code snapshot verification
+Full analyses require external inputs and a larger environment:
 
-Python syntax parsing and five evaluation smoke tests passed. Full training and data-dependent reproduction were not rerun for publication. Public source release does not change the completion status of any experiment.
+```bash
+python -m pip install -e .
+python -m pip install -r requirements-analysis.txt
+```
+
+Install hardware-appropriate PyTorch and obtain upstream encoder sources/weights separately. Related MoE experiments may need [additional dependencies](requirements-extensions.txt). See [upstream information](docs/THIRD_PARTY.md).
+
+Historical scripts retain absolute paths, including `/root/b_false_alarm_atlas`. Read their input/output paths before running them. The lightweight example is portable; the complete research pipeline has not been converted into a one-command reproduction package. Never overwrite an existing experiment directory.
+
+## Data and reproducibility
+
+Raw EEG, saved predictions, patient-level tables, trained checkpoints and validation locks are external inputs, documented in [DATA.md](docs/DATA.md). The code alone does not reproduce the published numerical tables without those artifacts.
+
+The default matcher preserves the paper's maximum-total-overlap assignment followed by a one-second overlap filter. A later cardinality-first matcher is archived separately because it can change event metrics.
+
+## Experiment status
+
+The last verified reviewer-supplement artifact, inventoried on **2026-09-30**, was a one-run smoke with zero bootstrap replicates. The complete 15-run supplement is not verified as complete. [STATUS.md](docs/STATUS.md) lists the outstanding checks and implementation issues. Documentation and demo checks do not change experiment completion status.
+
+## Sharing and licensing
+
+This public repository contains code and technical documentation. Manuscript drafts, private correspondence, patient data, credentials and weights are excluded; the complete historical backup remains private.
+
+No open-source license has been selected for the authors' code. Public visibility is not a general reuse license. Upstream software and datasets retain their own terms. Please discuss reuse requiring additional permission with the authors.

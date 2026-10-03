@@ -1,0 +1,25 @@
+name: Lightweight checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements-demo.txt
+            requirements-test.txt
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pytest tests/evaluation tests/examples -q
+      - run: python examples/evaluation_demo.py
+      - run: python scripts/check_public_repository.py

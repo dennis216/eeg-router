@@ -27,6 +27,10 @@ These issues are documented, not repaired by the packaging task. The original pa
 
 ## Source reconciliation
 
-The Linux shared matcher changed after the paper to a cardinality-first objective. The package restores the original Git implementation for the paper runtime and adjusts its matching regression test accordingly. The later matcher and all differing source copies remain in `archive/`. Other Linux source takes precedence over the mirrored Windows version; differences are retained and inventoried, not claimed to be paper-era byte-identical.
+The Linux shared matcher changed after the paper to a cardinality-first objective. The package restores the original Git implementation for the paper runtime and adjusts its matching regression test accordingly. The [later matcher](../archive/matcher_after_2026_09_19.py) is publicly archived. Other differing source copies and their inventory remain in the private backup. Other Linux source takes precedence over the mirrored Windows version; these sources are not claimed to be paper-era byte-identical.
 
-`111_freeze_research_a_v1_1.py` references a separate HMM audit (`107_run_h2_dynamic_confirmatory_audit.py`). That unrelated cross-project audit is intentionally absent. It is listed in `package_audit.json` and is not required by the primary router/oracle route.
+`111_freeze_research_a_v1_1.py` references a separate HMM audit (`107_run_h2_dynamic_confirmatory_audit.py`). That unrelated cross-project audit is intentionally absent and is not required by the primary router/oracle route. Do not use the broad cross-project freeze script as a router reproduction entry point.
+
+## Public usability update — 2026-10-02
+
+The bilingual navigation, synthetic example and lightweight checks are independent of study completion. The experiment-status inventory above remains dated 2026-09-30; no new study evaluation was performed for this update.
